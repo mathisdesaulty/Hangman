@@ -1,8 +1,17 @@
-import random
+import requests
 
 def choose_word():
-    words = ["python", "discord", "bot", "hangman", "programming"]
-    return random.choice(words)
+    response = requests.get('https://trouve-mot.fr/api/random')
+    if response.status_code == 200:
+        word_data = response.json()
+        if isinstance(word_data, list) and 'name' in word_data[0]:
+            return word_data[0]['name']
+        else:
+            print("Erreur dans la structure de la réponse. Utilisation d'un mot par défaut.")
+            return "default"
+    else:
+        print("Erreur lors de la récupération du mot. Utilisation d'un mot par défaut.")
+        return "default"
 
 def display_current_state(word, guessed_letters):
     display = [letter if letter in guessed_letters else "_" for letter in word]
