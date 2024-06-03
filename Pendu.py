@@ -1,5 +1,6 @@
 import requests
 
+# Utilisation de l'api trouve-mot afin de prendre un mot au hasard dans le dictionnaire francais
 def choose_word():
     response = requests.get('https://trouve-mot.fr/api/random')
     if response.status_code == 200:
