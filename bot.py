@@ -2,14 +2,11 @@ import discord
 import requests
 from discord.ext import commands
 
-# Remplacez 'your_token_here' par le token de votre bot
-TOKEN = 'your_token_here'
+TOKEN = 'token'
 
-# Définir les intents (permissions) que votre bot va utiliser
 intents = discord.Intents.default()
 intents.message_content = True
 
-# Initialiser le bot avec un préfixe de commande
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
@@ -34,12 +31,10 @@ def display_current_state(word, guessed_letters):
     return " ".join(display)
 
 
-# Événement lorsque le bot est prêt
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
-# Commande simple
 @bot.command()
 async def hello(ctx):
     await ctx.send('Hello!')
@@ -96,7 +91,7 @@ async def guess(ctx, letter: str):
     await ctx.send(current_state)
     await ctx.send(f"Vous avez {game['tries']} essais restants.")
 
-    if "_" not in current_state:
+    if "~" not in current_state:
         game["guessed_word"] = True
         await ctx.send(f"Félicitations! Vous avez trouvé le mot: {word}")
         del games[ctx.author.id]
@@ -104,6 +99,25 @@ async def guess(ctx, letter: str):
         await ctx.send(f"Vous avez perdu. Le mot était: {word}")
         del games[ctx.author.id]
 
+@bot.command()
+async def guessWord(ctx, word: str):
+    if ctx.author.id not in games:
+        await ctx.send("Vous devez commencer un nouveau jeu avec !start")   
+        return
+    game = games[ctx.author.id]
+    if word == game["word"]:
+        game["guessed_word"] = True
+        await ctx.send(f"Félicitations! Vous avez trouvé le mot: {word}")
+        del games[ctx.author.id]
+    else:
+        game["tries"] -= 1
+        await ctx.send("Mauvaise réponse.")
+        current_state = display_current_state(word, "_")
+        await ctx.send(current_state)
+        await ctx.send(f"Vous avez {game['tries']} essais restants.")
+        if game["tries"] <= 0:
+            await ctx.send(f"Vous avez perdu. Le mot était: {game['word']}")
+            del games[ctx.author.id]
 
 
 # Lancer le bot
