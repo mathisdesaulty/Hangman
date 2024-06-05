@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 
-games = {}
+hang = {}
 
 def choose_word():
     response = requests.get('https://trouve-mot.fr/api/random')
@@ -31,6 +31,29 @@ def display_current_state(word, guessed_letters):
     return " ".join(display)
 
 
+tictactoe = {}
+
+def initialize_board():
+    return [[" " for _ in range(3)] for _ in range(3)]
+
+def display_board(board):
+    return "\n".join([" | ".join(row) for row in board])
+
+def check_winner(board, player):
+    for row in board:
+        if all([cell == player for cell in row]):
+            return True
+    for col in range(3):
+        if all([board[row][col] == player for row in range(3)]):
+            return True
+    if all([board[i][i] == player for i in range(3)]) or all([board[i][2 - i] == player for i in range(3)]):
+        return True
+    return False
+
+def is_full(board):
+    return all([cell != " " for row in board for cell in row])
+
+
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
@@ -45,9 +68,9 @@ async def triplecoucou(ctx):
 
 
 @bot.command()
-async def start(ctx):
+async def startHangman(ctx):
     word = choose_word()
-    games[ctx.author.id] = {
+    hang[ctx.author.id] = {
         "word": word,
         "guessed_letters": set(),
         "tries": 6,
@@ -59,11 +82,11 @@ async def start(ctx):
 
 @bot.command()
 async def guess(ctx, letter: str):
-    if ctx.author.id not in games:
+    if ctx.author.id not in hang:
         await ctx.send("Vous devez commencer un nouveau jeu avec !start")   
         return
 
-    game = games[ctx.author.id]
+    game = hang[ctx.author.id]
     word = game["word"]
     guessed_letters = game["guessed_letters"]
     tries = game["tries"]
@@ -94,21 +117,21 @@ async def guess(ctx, letter: str):
     if "~" not in current_state:
         game["guessed_word"] = True
         await ctx.send(f"Félicitations! Vous avez trouvé le mot: {word}")
-        del games[ctx.author.id]
+        del hang[ctx.author.id]
     elif game["tries"] <= 0:
         await ctx.send(f"Vous avez perdu. Le mot était: {word}")
-        del games[ctx.author.id]
+        del hang[ctx.author.id]
 
 @bot.command()
 async def guessWord(ctx, word: str):
-    if ctx.author.id not in games:
+    if ctx.author.id not in hang:
         await ctx.send("Vous devez commencer un nouveau jeu avec !start")   
         return
-    game = games[ctx.author.id]
+    game = hang[ctx.author.id]
     if word == game["word"]:
         game["guessed_word"] = True
         await ctx.send(f"Félicitations! Vous avez trouvé le mot: {word}")
-        del games[ctx.author.id]
+        del hang[ctx.author.id]
     else:
         game["tries"] -= 1
         await ctx.send("Mauvaise réponse.")
@@ -117,8 +140,91 @@ async def guessWord(ctx, word: str):
         await ctx.send(f"Vous avez {game['tries']} essais restants.")
         if game["tries"] <= 0:
             await ctx.send(f"Vous avez perdu. Le mot était: {game['word']}")
-            del games[ctx.author.id]
+            del hang[ctx.author.id]
 
+@bot.command()
+async def startTicTacToe(ctx, opponent: discord.Member):
+    if ctx.author.id in tictactoe or opponent.id in tictactoe:
+        await ctx.send("Un des joueurs est déjà dans une partie.")
+        return
+
+    tictactoe[ctx.author.id] = {
+        "board": initialize_board(),
+        "turn": ctx.author.id,
+        "players": [ctx.author.id, opponent.id]
+    }
+    tictactoe[opponent.id] = tictactoe[ctx.author.id]
+
+    await ctx.send(f"{ctx.author.mention} a commencé un jeu de morpion avec {opponent.mention}!")
+    await ctx.send(display_board(tictactoe[ctx.author.id]["board"]))
+    await ctx.send(f"C'est au tour de {ctx.author.mention} (X)")
+
+@bot.command()
+async def play(ctx, row: int, col: int):
+    if ctx.author.id not in tictactoe:
+        await ctx.send("Vous devez commencer un nouveau jeu avec !start")
+        return
+
+    game = tictactoe[ctx.author.id]
+    if game["turn"] != ctx.author.id:
+        await ctx.send("Ce n'est pas votre tour.")
+        return
+
+    board = game["board"]
+    player_symbol = "X" if game["turn"] == game["players"][0] else "O"
+
+    if row < 1 or row > 3 or col < 1 or col > 3:
+        await ctx.send("Les indices de ligne et de colonne doivent être entre 1 et 3.")
+        return
+
+    if board[row - 1][col - 1] != " ":
+        await ctx.send("Cette case est déjà occupée. Choisissez-en une autre.")
+        return
+
+    board[row - 1][col - 1] = player_symbol
+
+    if check_winner(board, player_symbol):
+        await ctx.send(display_board(board))
+        await ctx.send(f"Félicitations {ctx.author.mention}, vous avez gagné !")
+        del tictactoe[game["players"][0]]
+        del tictactoe[game["players"][1]]
+        return
+
+    if is_full(board):
+        await ctx.send(display_board(board))
+        await ctx.send("C'est un match nul !")
+        del tictactoe[game["players"][0]]
+        del tictactoe[game["players"][1]]
+        return
+
+    game["turn"] = game["players"][0] if game["turn"] == game["players"][1] else game["players"][1]
+    next_player = bot.get_user(game["turn"])
+    await ctx.send(display_board(board))
+    await ctx.send(f"C'est au tour de {next_player.mention} ({'X' if game['turn'] == game['players'][0] else 'O'})")
+    
+@bot.command()
+async def stop(ctx):
+    game = tictactoe[ctx.author.id]
+    if ctx.author.id not in tictactoe:
+        await ctx.send("Vous devez commencer un nouveau jeu avec !start")
+        return
+    del tictactoe[game["players"][0]]
+    del tictactoe[game["players"][1]]
+    await ctx.send("La partie a été arrêtée.")
+    
+@bot.command()
+async def commandes(ctx):
+    await ctx.send("Bienvenue dans l'aide de ce bot !\n\n"
+                   "Voici la liste des commandes disponibles :\n"
+                   "!hello : Affiche un message de bienvenue\n"
+                   "!triplecoucou : Monstre dit coucou 3 fois\n"
+                   "!startHangman : Commence une partie de pendu\n"
+                   "!guess <lettre> : Propose une lettre pour le pendu\n"
+                   "!guessWord <mot> : Propose un mot pour le pendu\n"
+                   "!startTicTacToe <@joueur> : Commence une partie de morpion avec un joueur\n"
+                   "!play <ligne> <colonne> : Joue un coup dans la partie de morpion\n"
+                   "!stop : Arrête la partie de morpion en cours\n"
+                   "!help : Affiche l'aide du bot")
 
 # Lancer le bot
 bot.run(TOKEN)
