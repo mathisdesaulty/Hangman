@@ -2,13 +2,9 @@ import discord
 import requests
 from discord.ext import commands
 
-
-import requests
-from discord.ext import commands
-
 TOKEN = 'token'
 
-
+intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -211,6 +207,12 @@ async def stop(ctx):
     game = tictactoe[ctx.author.id]
     if ctx.author.id not in tictactoe:
         await ctx.send("Vous devez commencer un nouveau jeu avec !start")
+        return
+    del tictactoe[game["players"][0]]
+    del tictactoe[game["players"][1]]
+    await ctx.send("La partie a été arrêtée.")
+    
+@bot.command()
 async def commandes(ctx):
     await ctx.send("Bienvenue dans l'aide de ce bot !\n\n"
                    "Voici la liste des commandes disponibles :\n"
