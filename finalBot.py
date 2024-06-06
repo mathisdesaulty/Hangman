@@ -274,7 +274,7 @@ def est_plein(grille):
 
 
 @bot.command()
-async def start(ctx, adversaire: discord.Member):
+async def start4(ctx, adversaire: discord.Member):
     if ctx.author.id in games or adversaire.id in games:
         await ctx.send("Un des joueurs a déjà une partie en cours. Terminez-la avant de commencer une nouvelle.")
         return
@@ -291,7 +291,7 @@ async def start(ctx, adversaire: discord.Member):
     await ctx.send(f"C'est au tour de {ctx.author.mention} (X)")
 
 @bot.command()
-async def play(ctx, colonne: int):
+async def play4(ctx, colonne: int):
     if ctx.author.id not in games:
         await ctx.send("Vous devez commencer un nouveau jeu avec !start")
         return
