@@ -226,5 +226,99 @@ async def commandes(ctx):
                    "!stop : Arrête la partie de morpion en cours\n"
                    "!help : Affiche l'aide du bot")
 
+games = {}
+
+def initialiser_grille():
+    return [[" " for _ in range(7)] for _ in range(6)]
+
+def afficher_grille(grille):
+    lignes = ["| " + " | ".join(ligne) + " |" for ligne in grille]
+    return "\n".join(lignes) + "\n" + "+---" * 7 + "+"
+
+def placer_pion(grille, colonne, pion):
+    for ligne in reversed(grille):
+        if ligne[colonne] == " ":
+            ligne[colonne] = pion
+            return True
+    return False
+
+def verifier_victoire(grille, pion):
+    # Vérifier les lignes
+    for ligne in grille:
+        for i in range(4):
+            if ligne[i] == ligne[i+1] == ligne[i+2] == ligne[i+3] == pion:
+                return True
+    
+    # Vérifier les colonnes
+    for col in range(7):
+        for ligne in range(3):
+            if grille[ligne][col] == grille[ligne+1][col] == grille[ligne+2][col] == grille[ligne+3][col] == pion:
+                return True
+
+    # Vérifier les diagonales (haut-gauche à bas-droite)
+    for ligne in range(3):
+        for col in range(4):
+            if grille[ligne][col] == grille[ligne+1][col+1] == grille[ligne+2][col+2] == grille[ligne+3][col+3] == pion:
+                return True
+
+    # Vérifier les diagonales (bas-gauche à haut-droite)
+    for ligne in range(3, 6):
+        for col in range(4):
+            if grille[ligne][col] == grille[ligne-1][col+1] == grille[ligne-2][col+2] == grille[ligne-3][col+3] == pion:
+                return True
+
+    return False
+
+def est_plein(grille):
+    return all(grille[0][col] != " " for col in range(7))
+
+@bot.command()
+async def start4(ctx):
+    if ctx.author.id in games:
+        await ctx.send("Vous avez déjà une partie en cours. Utilisez !play pour jouer.")
+        return
+    
+    games[ctx.author.id] = {
+        "grille": initialiser_grille(),
+        "joueurs": ["X", "O"],
+        "tour": 0
+    }
+    await ctx.send("Jeu de Puissance 4 commencé ! Voici la grille :")
+    await ctx.send("```\n" + afficher_grille(games[ctx.author.id]["grille"]) + "\n```")
+    await ctx.send(f"C'est au tour de {ctx.author.mention} (X)")
+
+@bot.command()
+async def play4(ctx, colonne: int):
+    if ctx.author.id not in games:
+        await ctx.send("Vous devez commencer un nouveau jeu avec !start")
+        return
+
+    game = games[ctx.author.id]
+    grille = game["grille"]
+    joueur = game["joueurs"][game["tour"] % 2]
+
+    if colonne < 0 or colonne > 6:
+        await ctx.send("Colonne invalide. Veuillez choisir une colonne entre 0 et 6.")
+        return
+
+    if not placer_pion(grille, colonne, joueur):
+        await ctx.send("Cette colonne est pleine. Veuillez en choisir une autre.")
+        return
+
+    await ctx.send("```\n" + afficher_grille(grille) + "\n```")
+
+    if verifier_victoire(grille, joueur):
+        await ctx.send(f"Félicitations ! Le joueur {joueur} a gagné !")
+        del games[ctx.author.id]
+        return
+
+    if est_plein(grille):
+        await ctx.send("La grille est pleine. Match nul !")
+        del games[ctx.author.id]
+        return
+
+    game["tour"] += 1
+    joueur_suivant = game["joueurs"][game["tour"] % 2]
+    await ctx.send(f"C'est au tour de {ctx.author.mention} ({joueur_suivant})")
 # Lancer le bot
 bot.run(TOKEN)
