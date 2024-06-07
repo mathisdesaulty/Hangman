@@ -211,20 +211,6 @@ async def stop(ctx):
     del tictactoe[game["players"][0]]
     del tictactoe[game["players"][1]]
     await ctx.send("La partie a été arrêtée.")
-    
-@bot.command()
-async def commandes(ctx):
-    await ctx.send("Bienvenue dans l'aide de ce bot !\n\n"
-                   "Voici la liste des commandes disponibles :\n"
-                   "!hello : Affiche un message de bienvenue\n"
-                   "!triplecoucou : Monstre dit coucou 3 fois\n"
-                   "!startHangman : Commence une partie de pendu\n"
-                   "!guess <lettre> : Propose une lettre pour le pendu\n"
-                   "!guessWord <mot> : Propose un mot pour le pendu\n"
-                   "!startTicTacToe <@joueur> : Commence une partie de morpion avec un joueur\n"
-                   "!play <ligne> <colonne> : Joue un coup dans la partie de morpion\n"
-                   "!stop : Arrête la partie de morpion en cours\n"
-                   "!help : Affiche l'aide du bot")
 
 games = {}
 
@@ -332,5 +318,23 @@ async def play4(ctx, colonne: int):
     joueur_suivant = bot.get_user(game["joueurs"][game["tour"] % 2])
     pion_suivant = "X" if game["tour"] % 2 == 0 else "O"
     await ctx.send(f"C'est au tour de {joueur_suivant.mention} ({pion_suivant})")
+    
+    
+    
+@bot.command()
+async def commandes(ctx):
+    await ctx.send("Bienvenue dans l'aide de ce bot !\n\n"
+                   "Voici la liste des commandes disponibles :\n"
+                   "!hello : Affiche un message de bienvenue\n"
+                   "!triplecoucou : Monstre dit coucou 3 fois\n"
+                   "!startHangman : Commence une partie de pendu\n"
+                   "!guess <lettre> : Propose une lettre pour le pendu\n"
+                   "!guessWord <mot> : Propose un mot pour le pendu\n"
+                   "!startTicTacToe <@joueur> : Commence une partie de morpion avec un joueur\n"
+                   "!play <ligne> <colonne> : Joue un coup dans la partie de morpion\n"
+                   "!stop : Arrête la partie de morpion en cours\n"
+                   "!help : Affiche l'aide du bot"
+                   "!start4 <@joueur> : Commence une partie de Puissance 4 avec un joueur\n"
+                   "!play4 <colonne> : Joue un coup dans la partie de Puissance 4\n")
 # Lancer le bot
 bot.run(TOKEN)
